@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>รถถัง T-90A 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background: #0a0a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.9);
+            z-index: 10;
+            background: rgba(0,0,0,0.6);
+            padding: 12px 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
+        }
+        #ui div {
+            margin: 4px 0;
+        }
+        #ui .small {
+            font-size: 14px;
+            color: #aaa;
+        }
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f1c40f;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 0 0 40px rgba(241, 196, 15, 0.4);
+            z-index: 20;
+            display: none;
+            text-align: center;
+            background: rgba(0,0,0,0.8);
+            padding: 40px 50px;
+            border-radius: 24px;
+            backdrop-filter: blur(12px);
+            border: 2px solid #f1c40f;
+            min-width: 280px;
+        }
+        #gameOver button {
+            margin-top: 25px;
+            padding: 14px 40px;
+            font-size: 22px;
+            background: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            touch-action: manipulation;
+        }
+        #gameOver button:active {
+            transform: scale(0.95);
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 16px;
+            border-radius: 16px;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            text-align: center;
+            pointer-events: none;
+            display: none;
+        }
+        /* ปุ่มควบคุมแบบ Touch */
+        .touch-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 15;
+            pointer-events: none;
+        }
+        .joystick-area {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(3, 60px);
+            gap: 4px;
+            pointer-events: none;
+        }
+        .joystick-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: rgba(255,255,255,0.8);
+            pointer-events: auto;
+            touch-action: none;
+            backdrop-filter: blur(4px);
+            transition: 0.1s;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .joystick-btn:active {
+            background: rgba(255,255,255,0.25);
+            transform: scale(0.92);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .joystick-empty {
+            visibility: hidden;
+        }
+        .fire-btn {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #e74c3c, #a93226);
+            border: 3px solid #ff6b6b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+            pointer-events: auto;
+            touch-action: none;
+            box-shadow: 0 0 40px rgba(231, 76, 60, 0.3);
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+            margin-bottom: 10px;
+        }
+        .fire-btn:active {
+            transform: scale(0.90);
+            box-shadow: 0 0 60px rgba(231, 76, 60, 0.6);
+        }
+        .fire-btn.active {
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b);
+            box-shadow: 0 0 60px rgba(231, 76, 60, 0.8);
+        }
+        .right-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+        @media (max-width: 500px) {
+            .joystick-area { grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 3px; }
+            .joystick-btn { width: 50px; height: 50px; font-size: 20px; }
+            .fire-btn { width: 70px; height: 70px; font-size: 26px; }
+            #ui { font-size: 14px; padding: 10px 14px; top: 10px; left: 10px; }
+            #gameOver { font-size: 32px; padding: 30px 30px; min-width: 200px; }
+            #gameOver button { font-size: 18px; padding: 12px 30px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div>🎯 <span id="scoreDisplay">0</span></div>
+        <div>❤️ <span id="livesDisplay">3</span></div>
+        <div class="small">🎯 รถถัง T-90A</div>
+    </div>
+    
+    <div id="gameOver">
+        💀 GAME OVER
+        <br>
+        <button onclick="restartGame()">🔄 เล่นใหม่</button>
+    </div>
+    
+    <!-- ปุ่มควบคุม Touch -->
+    <div class="touch-controls">
+        <div class="joystick-area">
+            <div class="joystick-empty"></div>
+            <div class="joystick-btn" id="upBtn">⬆</div>
+            <div class="joystick-empty"></div>
+            <div class="joystick-btn" id="leftBtn">⬅</div>
+            <div class="joystick-btn" id="downBtn">⬇</div>
+            <div class="joystick-btn" id="rightBtn">➡</div>
+        </div>
+        <div class="right-controls">
+            <div class="fire-btn" id="fireBtn">🔥</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ============================================================
+        // เกมรถถัง T-90A 3D สำหรับมือถือ
+        // ============================================================
+        
+        // --- ตัวแปรหลัก ---
+        let scene, camera, renderer;
+        let playerTank, enemyTanks = [];
+        let bullets = [];
+        let score = 0, lives = 3;
+        let gameOver = false;
+        let isFiring = false;
+        let fireInterval = null;
+        let shotCooldown = 0;
+        
+        // การควบคุม
+        let touchKeys = { up: false, down: false, left: false, right: false };
+        let targetRotation = 0;
+        let playerSpeed = 0.15;
+        
+        // กล้อง
+        let cameraAngle = 0;
+        let cameraDistance = 12;
+        let cameraHeight = 8;
+        
+        // DOM
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const gameOverDiv = document.getElementById('gameOver');
+        
+        // ============================================================
+        // ตั้งค่า Scene
+        // ============================================================
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a3a2a);
+            scene.fog = new THREE.Fog(0x1a3a2a, 30, 60);
+            
+            // กล้อง
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, cameraHeight, cameraDistance);
+            camera.lookAt(0, 0, 0);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.body.prepend(renderer.domElement);
+            
+            // แสง
+            const ambientLight = new THREE.AmbientLight(0x404060, 0.4);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+            dirLight.position.set(20, 30, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 60;
+            dirLight.shadow.camera.left = -30;
+            dirLight.shadow.camera.right = 30;
+            dirLight.shadow.camera.top = 30;
+            dirLight.shadow.camera.bottom = -30;
+            scene.add(dirLight);
+            
+            const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x3a5a3a, 0.4);
+            scene.add(hemiLight);
+            
+            // พื้น
+            createGround();
+            
+            // ขอบเขต
+            createBoundaries();
+            
+            // ต้นไม้ประดับ
+            for (let i = 0; i < 30; i++) {
+                createTree();
+            }
+        }
+        
+        // ============================================================
+        // สร้างพื้น
+        // ============================================================
+        function createGround() {
+            const groundGeo = new THREE.PlaneGeometry(50, 50);
+            const groundMat = new THREE.MeshStandardMaterial({
+                color: 0x2d5a2d,
+                roughness: 0.9,
+                metalness: 0.0
+            });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.5;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // ตาราง
+            const gridHelper = new THREE.GridHelper(50, 20, 0x4a7a4a, 0x3a6a3a);
+            gridHelper.position.y = -0.45;
+            scene.add(gridHelper);
+        }
+        
+        // ============================================================
+        // สร้างขอบเขต
+        // ============================================================
+        function createBoundaries() {
+            const wallMat = new THREE.MeshStandardMaterial({
+                color: 0x8b4513,
+                roughness: 0.8,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.3
+            });
+            const positions = [
+                { x: 0, z: -25, w: 50, h: 1 },
+                { x: 0, z: 25, w: 50, h: 1 },
+                { x: -25, z: 0, w: 1, h: 50 },
+                { x: 25, z: 0, w: 1, h: 50 }
+            ];
+            positions.forEach(p => {
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(p.w, 0.5, p.h), wallMat);
+                wall.position.set(p.x, 0, p.z);
+                wall.receiveShadow = true;
+                scene.add(wall);
+            });
+        }
+        
+        // ============================================================
+        // สร้างต้นไม้
+        // ============================================================
+        function createTree() {
+            const x = (Math.random() - 0.5) * 40;
+            const z = (Math.random() - 0.5) * 40;
+            // หลีกเลี่ยงจุดเริ่มต้น
+            if (Math.abs(x) < 5 && Math.abs(z) < 5) return;
+            
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.2, 0.3, 1.5, 6),
+                new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.9 })
+            );
+            trunk.position.set(x, 0.3, z);
+            trunk.castShadow = true;
+            scene.add(trunk);
+            
+            const leaves = new THREE.Mesh(
+                new THREE.SphereGeometry(0.6 + Math.random() * 0.4, 6, 6),
+                new THREE.MeshStandardMaterial({ 
+                    color: new THREE.Color().setHSL(0.25 + Math.random() * 0.1, 0.6, 0.3),
+                    roughness: 0.8
+                })
+            );
+            leaves.position.set(x, 1.5 + Math.random() * 0.3, z);
+            leaves.castShadow = true;
+            scene.add(leaves);
+        }
+        
+        // ============================================================
+        // สร้างรถถัง T-90A
+        // ============================================================
+        function createTank(color, isPlayer = false) {
+            const group = new THREE.Group();
+            
+            // ตัวถัง
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 2.4), bodyMat);
+            body.position.y = 0.4;
+            body.castShadow = true;
+            group.add(body);
+            
+            // เกราะป้องกันด้านหน้า (ลักษณะ T-90)
+            const armorMat = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(color).multiplyScalar(0.8),
+                roughness: 0.5,
+                metalness: 0.7
+            });
+            const armor = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.3, 0.5), armorMat);
+            armor.position.set(0, 0.5, 1.3);
+            group.add(armor);
+            
+            // ป้อมปืน
+            const turretMat = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(color).multiplyScalar(1.1),
+                roughness: 0.3,
+                metalness: 0.7
+            });
+            const turret = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.8, 0.4, 12), turretMat);
+            turret.position.y = 0.9;
+            turret.castShadow = true;
+            group.add(turret);
+            
+            // ป้อมปืนบน (ส่วนโค้ง)
+            const turretTop = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8, 0, Math.PI*2, 0, Math.PI/2), turretMat);
+            turretTop.position.y = 1.1;
+            turretTop.scale.set(1, 0.3, 1);
+            group.add(turretTop);
+            
+            // ลำกล้องปืน
+            const barrelMat = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.3,
+                metalness: 0.8
+            });
+            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.2, 8), barrelMat);
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.set(0, 0.95, 1.0);
+            barrel.castShadow = true;
+            group.add(barrel);
+            
+            // ปลายลำกล้อง
+            const barrelTip = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.2, 8), barrelMat);
+            barrelTip.rotation.x = Math.PI / 2;
+            barrelTip.position.set(0, 0.95, 1.6);
+            group.add(barrelTip);
+            
+            // หนอนผีเสื้อ
+            const trackMat = new THREE.MeshStandardMaterial({
+                color: 0x222222,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            const trackPos = [-1.0, 1.0];
+            trackPos.forEach(x => {
+                const track = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.25, 2.2), trackMat);
+                track.position.set(x, 0.2, 0);
+                group.add(track);
+                
+                // ล้อ
+                for (let i = -0.8; i <= 0.8; i += 0.4) {
+                    const wheel = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.15, 0.15, 0.08, 8),
+                        new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.7, metalness: 0.3 })
+                    );
+                    wheel.rotation.x = Math.PI / 2;
+                    wheel.position.set(x * 1.1, 0.1, i);
+                    group.add(wheel);
+                }
+            });
+            
+            // ไฟหน้า
+            const lightMat = new THREE.MeshStandardMaterial({
+                color: 0xffff88,
+                emissive: 0xffff44,
+                emissiveIntensity: 0.3
+            });
+            const light1 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), lightMat);
+            light1.position.set(-0.4, 0.3, 1.3);
+            group.add(light1);
+            const light2 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), lightMat);
+            light2.position.set(0.4, 0.3, 1.3);
+            group.add(light2);
+            
+            // กล้องของผู้เล่น (สำหรับมอง)
+            if (isPlayer) {
+                const camMat = new THREE.MeshStandardMaterial({
+                    color: 0x4444ff,
+                    emissive: 0x2244ff,
+                    emissiveIntensity: 0.2
+                });
+                const cam = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), camMat);
+                cam.position.set(0, 0.7, 0.5);
+                group.add(cam);
+            }
+            
+            // ชื่อ T-90A (เป็นแค่ของตกแต่ง)
+            const labelGroup = new THREE.Group();
+            // ไม่ต้องใส่ข้อความจริง เพราะ Three.js ไม่มี TextGeometry ใน CDN ง่าย
+            
+            return group;
+        }
+        
+        // ============================================================
+        // สร้างศัตรู
+        // ============================================================
+        function spawnEnemy() {
+            const colors = [0x8b3a3a, 0x7a4a2a, 0x5a4a3a, 0x6a3a4a];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const tank = createTank(color, false);
+            
+            let x, z, valid;
+            let attempts = 0;
+            do {
+                x = (Math.random() - 0.5) * 30;
+                z = (Math.random() - 0.5) * 30;
+                valid = true;
+                // ไม่ให้เกิดใกล้ผู้เล่นเกินไป
+                if (Math.abs(x) < 6 && Math.abs(z) < 6) valid = false;
+                // ไม่ให้เกิดใกล้ศัตรูอื่น
+                for (let e of enemyTanks) {
+                    if (Math.hypot(e.position.x - x, e.position.z - z) < 4) {
+                        valid = false;
+                        break;
+                    }
+                }
+                attempts++;
+                if (attempts > 100) break;
+            } while (!valid);
+            
+            tank.position.set(x, 0, z);
+            tank.rotation.y = Math.random() * Math.PI * 2;
+            tank.scale.set(0.8, 0.8, 0.8);
+            
+            // เก็บข้อมูล AI
+            tank.userData = {
+                speed: 0.04 + Math.random() * 0.03,
+                direction: Math.random() * Math.PI * 2,
+                changeTimer: 0,
+                shootTimer: Math.random() * 100,
+                health: 3
+            };
+            
+            scene.add(tank);
+            enemyTanks.push(tank);
+        }
+        
+        // ============================================================
+        // สร้างผู้เล่น
+        // ============================================================
+        function createPlayer() {
+            if (playerTank) {
+                scene.remove(playerTank);
+            }
+            playerTank = createTank(0x3a7a3a, true);
+            playerTank.position.set(0, 0, 0);
+            playerTank.scale.set(1, 1, 1);
+            scene.add(playerTank);
+        }
+        
+        // ============================================================
+        // ยิงกระสุน
+        // ============================================================
+        function fireBullet(from, direction, isEnemy = false) {
+            const bulletMat = new THREE.MeshStandardMaterial({
+                color: isEnemy ? 0xff4444 : 0xffdd44,
+                emissive: isEnemy ? 0xff0000 : 0xffaa00,
+                emissiveIntensity: 0.5
+            });
+            const bullet = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), bulletMat);
+            
+            const pos = from.position.clone();
+            const dir = direction.clone();
+            
+            // ปรับตำแหน่งให้ออกจากลำกล้อง
+            pos.y += 0.9;
+            pos.x += dir.x * 1.5;
+            pos.z += dir.z * 1.5;
+            
+            bullet.position.copy(pos);
+            bullet.castShadow = true;
+            
+            // เก็บข้อมูลกระสุน
+            bullet.userData = {
+                velocity: dir.multiplyScalar(isEnemy ? 0.2 : 0.35),
+                isEnemy: isEnemy,
+                life: 100
+            };
+            
+            scene.add(bullet);
+            bullets.push(bullet);
+        }
+        
+        function playerFire() {
+            if (gameOver || !playerTank) return;
+            if (shotCooldown > 0) return;
+            
+            const dir = new THREE.Vector3(0, 0, 1);
+            dir.applyQuaternion(playerTank.quaternion);
+            fireBullet(playerTank, dir, false);
+            shotCooldown = 15;
+            
+            // เอฟเฟกต์แสง
+            const flash = new THREE.PointLight(0xffff44, 2, 3);
+            flash.position.copy(playerTank.position);
+            flash.position.y += 0.8;
+            flash.position.x += dir.x * 1.5;
+            flash.position.z += dir.z * 1.5;
+            scene.add(flash);
+            setTimeout(() => scene.remove(flash), 100);
+        }
+        
+        // ============================================================
+        // AI ศัตรู
+        // ============================================================
+        function updateEnemies() {
+            const now = Date.now();
+            for (let i = enemyTanks.length - 1; i >= 0; i--) {
+                const enemy = enemyTanks[i];
+                const data = enemy.userData;
+                
+                // เคลื่อนที่แบบสุ่ม
+                data.changeTimer--;
+                if (data.changeTimer <= 0) {
+                    data.direction += (Math.random() - 0.5) * 1.5;
+                    data.changeTimer = 60 + Math.random() * 120;
+                }
+                
+                const moveX = Math.sin(data.direction) * data.speed;
+                const moveZ = Math.cos(data.direction) * data.speed;
+                
+                let newX = enemy.position.x + moveX;
+                let newZ = enemy.position.z + moveZ;
+                
+                // ขอบเขต
+                if (Math.abs(newX) > 23) { data.direction = -data.direction; newX = enemy.position.x - moveX; }
+                if (Math.abs(newZ) > 23) { data.direction = Math.PI - data.direction; newZ = enemy.position.z - moveZ; }
+                
+                enemy.position.x = newX;
+                enemy.position.z = newZ;
+                
+                // หมุนตามทิศทาง
+                const targetRot = Math.atan2(moveX, moveZ);
+                let diff = targetRot - enemy.rotation.y;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                enemy.rotation.y += diff * 0.05;
+                
+                // ยิงใส่ผู้เล่น
+                if (playerTank && !gameOver) {
+                    data.shootTimer--;
+                    if (data.shootTimer <= 0) {
+                        const toPlayer = new THREE.Vector3()
+                            .copy(playerTank.position)
+                            .sub(enemy.position);
+                        toPlayer.y = 0;
+                        const dist = toPlayer.length();
+                        if (dist < 20) {
+                            toPlayer.normalize();
+                            fireBullet(enemy, toPlayer, true);
+                        }
+                        data.shootTimer = 80 + Math.random() * 60;
+                    }
+                }
+            }
+        }
+        
+        // ============================================================
+        // อัปเดตกระสุน
+        // ============================================================
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                const vel = bullet.userData.velocity;
+                bullet.position.x += vel.x;
+                bullet.position.y += vel.y;
+                bullet.position.z += vel.z;
+                bullet.userData.life--;
+                
+                // ตรวจสอบขอบเขต
+                if (Math.abs(bullet.position.x) > 25 || Math.abs(bullet.position.z) > 25 || bullet.userData.life <= 0) {
+                    scene.remove(bullet);
+                    bullets.splice(i, 1);
+                    continue;
+                }
+                
+                // ตรวจสอบการชน
+                if (bullet.userData.isEnemy) {
+                    // กระสุนศัตรู ชน ผู้เล่น
+                    if (playerTank && !gameOver) {
+                        const dist = bullet.position.distanceTo(playerTank.position);
+                        if (dist < 1.2) {
+                            // ผู้เล่นโดน
+                            lives--;
+                            updateUI();
+                            scene.remove(bullet);
+                            bullets.splice(i, 1);
+                            
+                            if (lives <= 0) {
+                                setGameOver();
+                            } else {
+                                // รีเซ็ตผู้เล่น
+                                playerTank.position.set(0, 0, 0);
+                                // เคลียร์กระสุนศัตรูบางส่วน
+                                for (let j = bullets.length - 1; j >= 0; j--) {
+                                    if (bullets[j].userData.isEnemy) {
+                                        scene.remove(bullets[j]);
+                                        bullets.splice(j, 1);
+                                    }
+                                }
+                            }
+                            continue;
+                        }
+                    }
+                } else {
+                    // กระสุนผู้เล่น ชน ศัตรู
+                    for (let j = enemyTanks.length - 1; j >= 0; j--) {
+                        const enemy = enemyTanks[j];
+                        const dist = bullet.position.distanceTo(enemy.position);
+                        if (dist < 1.2) {
+                            // ศัตรูโดน
+                            enemy.userData.health--;
+                            if (enemy.userData.health <= 0) {
+                                scene.remove(enemy);
+                                enemyTanks.splice(j, 1);
+                                score += 10;
+                                updateUI();
+                                
+                                // สร้างศัตรูใหม่
+                                if (enemyTanks.length < 8) {
+                                    spawnEnemy();
+                                    if (Math.random() < 0.5) spawnEnemy();
+                                }
+                            }
+                            scene.remove(bullet);
+                            bullets.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // ============================================================
+        // ฟังก์ชันหลัก
+        // ============================================================
+        function updateUI() {
+            scoreDisplay.textContent = score;
+            livesDisplay.textContent = lives;
+        }
+        
+        function setGameOver() {
+            gameOver = true;
+            gameOverDiv.style.display = 'block';
+            if (fireInterval) {
+                clearInterval(fireInterval);
+                fireInterval = null;
+            }
+        }
+        
+        function restartGame() {
+            // ลบทุกอย่าง
+            bullets.forEach(b => scene.remove(b));
+            bullets = [];
+            enemyTanks.forEach(e => scene.remove(e));
+            enemyTanks = [];
+            if (playerTank) scene.remove(playerTank);
+            
+            gameOver = false;
+            gameOverDiv.style.display = 'none';
+            score = 0;
+            lives = 3;
+            shotCooldown = 0;
+            updateUI();
+            
+            createPlayer();
+            for (let i = 0; i < 5; i++) spawnEnemy();
+            
+            if (fireInterval) {
+                clearInterval(fireInterval);
+                fireInterval = null;
+            }
+            isFiring = false;
+        }
+        
+        // ============================================================
+        // อัปเดตเกม
+        // ============================================================
+        function update() {
+            if (gameOver) return;
+            
+            // เคลื่อนที่ผู้เล่น
+            if (playerTank) {
+                let dx = 0, dz = 0;
+                if (touchKeys.up) dz -= playerSpeed;
+                if (touchKeys.down) dz += playerSpeed;
+                if (touchKeys.left) dx -= playerSpeed;
+                if (touchKeys.right) dx += playerSpeed;
+                
+                if (dx !== 0 || dz !== 0) {
+                    // ปรับความเร็วแนวทแยง
+                    if (dx !== 0 && dz !== 0) {
+                        dx *= 0.707;
+                        dz *= 0.707;
+                    }
+                    
+                    // หมุนรถถัง
+                    const targetRot = Math.atan2(dx, dz);
+                    let diff = targetRot - playerTank.rotation.y;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    playerTank.rotation.y += diff * 0.08;
+                    
+                    // เคลื่อนที่
+                    const newX = playerTank.position.x + dx;
+                    const newZ = playerTank.position.z + dz;
+                    
+                    // ขอบเขต
+                    if (Math.abs(newX) < 24) playerTank.position.x = newX;
+                    if (Math.abs(newZ) < 24) playerTank.position.z = newZ;
+                }
+                
+                // Cooldown
+                if (shotCooldown > 0) shotCooldown--;
+            }
+            
+            // อัปเดตศัตรู
+            updateEnemies();
+            
+            // อัปเดตกระสุน
+            updateBullets();
+            
+            // สร้างศัตรูเพิ่ม
+            if (enemyTanks.length < 3 && !gameOver) {
+                spawnEnemy();
+                if (Math.random() < 0.5) spawnEnemy();
+            }
+            
+            // อัปเดตกล้อง
+            updateCamera();
+        }
+        
+        // ============================================================
+        // กล้อง
+        // ============================================================
+        function updateCamera() {
+            if (!playerTank) return;
+            
+            const target = playerTank.position.clone();
+            target.y = 0;
+            
+            // กล้องมุมบน
+            const angle = 0; // มุมคงที่
+            const dist = cameraDistance;
+            const height = cameraHeight;
+            
+            camera.position.x = target.x + Math.sin(angle) * dist;
+            camera.position.z = target.z + Math.cos(angle) * dist;
+            camera.position.y = height;
+            camera.lookAt(target);
+        }
+        
+        // ============================================================
+        // อนิเมชั่นลูป
+        // ============================================================
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+        
+        // ============================================================
+        // Event Listeners
+        // ============================================================
+        
+        // --- Touch ปุ่มควบคุม ---
+        function setupTouchButton(id, key) {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            
+            const start = (e) => {
+                e.preventDefault();
+                if (gameOver) return;
+                touchKeys[key] = true;
+            };
+            const end = (e) => {
+                e.preventDefault();
+                touchKeys[key] = false;
+            };
+            
+            btn.addEventListener('touchstart', start, { passive: false });
+            btn.addEventListener('touchend', end, { passive: false });
+            btn.addEventListener('touchcancel', end, { passive: false });
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        }
+        
+        setupTouchButton('upBtn', 'up');
+        setupTouchButton('downBtn', 'down');
+        setupTouchButton('leftBtn', 'left');
+        setupTouchButton('rightBtn', 'right');
+        
+        // --- ปุ่มยิง ---
+        const fireBtn = document.getElementById('fireBtn');
+        if (fireBtn) {
+            const startFire = (e) => {
+                e.preventDefault();
+                if (gameOver || !playerTank) return;
+                if (!isFiring) {
+                    isFiring = true;
+                    playerFire();
+                    fireInterval = setInterval(playerFire, 200);
+                    fireBtn.classList.add('active');
+                }
+            };
+            const stopFire = (e) => {
+                e.preventDefault();
+                isFiring = false;
+                if (fireInterval) {
+                    clearInterval(fire
