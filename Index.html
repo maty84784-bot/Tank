@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เว็บเอา Key เหมือน Script</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+        }
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #ff5252;
+            transform: translateY(-3px);
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 50px;
+            font-size: 1.1em;
+        }
+        .success { background: rgba(0,255,0,0.2); }
+        .error { background: rgba(255,0,0,0.2); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 เอา Key เหมือน Script</h1>
+        <p>เว็บจำลองการเอา Key แบบ Script</p>
+        
+        <input type="text" id="inputKey" placeholder="ใส่ Key หรือ Token ที่ต้องการตรวจสอบ">
+        
+        <div>
+            <button onclick="generateKey()">สร้าง Key ใหม่</button>
+            <button onclick="checkKey()">ตรวจสอบ Key</button>
+        </div>
+        
+        <div id="result"></div>
+        
+        <div style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
+            <p>ตัวอย่างการใช้งานเหมือน Script:</p>
+            <pre style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; text-align: left; overflow-x: auto;">
+# Script ตัวอย่าง
+key=$(curl -s "https://yourdomain.com/api/key")
+echo "Key ที่ได้: $key"
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        function generateKey() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let key = '';
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    key += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                if (i < 3) key += '-';
+            }
+            
+            const result = document.getElementById('result');
+            result.innerHTML = `
+                <strong>Key ที่สร้างได้:</strong><br>
+                <span style="font-size: 1.5em; font-family: monospace;">${key}</span><br>
+                <small>✅ คัดลอกไปใช้ได้เลย</small>
+            `;
+            result.className = 'success';
+            
+            navigator.clipboard.writeText(key);
+        }
+        
+        function checkKey() {
+            const input = document.getElementById('inputKey').value.trim();
+            const result = document.getElementById('result');
+            
+            if (!input) {
+                result.innerHTML = '❌ กรุณาใส่ Key';
+                result.className = 'error';
+                return;
+            }
+            
+            // ตรวจสอบแบบสมจริง (รูปแบบ + ความยาว)
+            const keyPattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+            
+            if (keyPattern.test(input)) {
+                result.innerHTML = `✅ Key ถูกต้อง!<br><strong>${input}</strong><br>สถานะ: <span style="color:lime">Active</span>`;
+                result.className = 'success';
+            } else {
+                result.innerHTML = `❌ Key ไม่ถูกต้อง<br>รูปแบบควรเป็น XXXX-XXXX-XXXX-XXXX`;
+                result.className = 'error';
+            }
+        }
+        
+        document.getElementById('inputKey').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkKey();
+        });
+    </script>
+</body>
+</html>
